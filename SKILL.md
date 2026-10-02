@@ -1,7 +1,7 @@
 ---
 name: iskill-workbuddy-deepseek
 summary: 把 WorkBuddy 内置浏览器里的 DeepSeek 网页版对话读出来交给 agent——不用外部 Chrome，不用在应用间切换。
-description: 当用户想在 WorkBuddy 内置浏览器里用 DeepSeek 网页版（免费）做讨论/规划，再把对话内容交给 agent（WorkBuddy / Codex）继续执行时使用。触发词：同步 DeepSeek、拉取 DeepSeek 对话、把 DeepSeek 的内容给我、DeepSeek 桥接、deepseek sync、读一下我 DeepSeek 的最新对话、把刚才网页版讨论的结论拿过来。也用于排查「内置浏览器登录态读不到」「token 失效」等问题。
+description: 当用户想在 WorkBuddy 内置浏览器里用 DeepSeek 网页版（免费）做讨论/规划，再把对话内容交给 agent（WorkBuddy / Codex）继续执行时使用。触发词：同步 DeepSeek、拉取 DeepSeek 对话、把 DeepSeek 的内容给我、DeepSeek 桥接、deepseek sync、读一下我 DeepSeek 的最新对话、把刚才网页版讨论的结论拿过来。也用于「打开 DeepSeek」「在面板里打开 DeepSeek 网页版」（用 present_files 开 URL 到内置浏览器面板）。还用于排查「内置浏览器登录态读不到」「token 失效」等问题。
 agent_created: true
 ---
 
@@ -84,6 +84,18 @@ $NODE $S push --file draft.md --no-copy    # 只统计，不碰剪贴板
 
 > `push` **不需要登录态** —— 它不读 token、不发任何请求，所以未登录也能用。
 
+## 打开 DeepSeek（无需脚本）
+
+用户说「打开 DeepSeek」/「我要和 DeepSeek 聊」时，**不需要跑脚本**：直接调用 `present_files` 传
+`https://chat.deepseek.com/`，页面会在 **WorkBuddy 内置浏览器面板**中打开（实测有效，见
+`docs/DeepSeek网页版桥接-方案.md` 2.3 节）。
+
+典型场景：
+- **首次登录**：面板打开后扫码登录，登录态落盘，之后 `status`/`pull` 即可用。
+- **反向流程前**：`push` 只到剪贴板，用户需要一个已经开着 DeepSeek 的面板来粘贴。
+
+> 也可以传具体会话 URL 让用户直接落到某条对话，但会话 ID 需先从 `pull`/`list` 输出里取。
+
 ## 消息结构（渲染依据）
 
 `history_messages` 返回的每条消息，正文在 `fragments[]` 里（**不在 `content`**）：
@@ -106,7 +118,8 @@ $NODE $S push --file draft.md --no-copy    # 只统计，不碰剪贴板
 1. 用户说「把结论发回 DeepSeek」/「同步到网页版」。
 2. 把要送过去的内容整理好，写进一个临时文件（或直接用 `--text`）。
 3. 跑 `ds-sync.mjs push --file <路径>`。
-4. 告诉用户：**内容已在剪贴板，去面板的输入框按 ⌘V 粘贴**。
+4. 若面板没开着 DeepSeek，先按「打开 DeepSeek」节用 `present_files` 打开。
+5. 告诉用户：**内容已在剪贴板，去面板的输入框按 ⌘V 粘贴**。
 
 **到剪贴板就结束。** 发送动作必须由人完成 —— 不要写脚本去模拟粘贴或调用接口。
 
@@ -114,7 +127,7 @@ $NODE $S push --file draft.md --no-copy    # 只统计，不碰剪贴板
 
 | 现象 | 原因 / 处理 |
 |---|---|
-| 找不到已登录会话 | 用户没在内置浏览器面板登录 DeepSeek。让其在面板打开 `https://chat.deepseek.com/` 扫码登录。 |
+| 找不到已登录会话 | 用户没在内置浏览器面板登录 DeepSeek。用 `present_files` 打开 `https://chat.deepseek.com/`（见「打开 DeepSeek」节），扫码登录。 |
 | `status` 显示接口验证失败 | token 过期。在面板刷新/重登一次即可，脚本每次都会重新读磁盘，无需手动同步 token。 |
 | `partitions` 里某个分区显示「未登录 (value=null)」 | 该分区是空壳，正常。挑显示「已登录」的那个。 |
 | 会话列表为空 | 账号确实没有历史会话，或接口变更。用 `--raw` 看原始返回。 |

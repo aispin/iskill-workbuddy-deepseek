@@ -98,6 +98,16 @@ $ node ds-sync.mjs list --count 3
 
 `push` **不需要登录态** —— 它不读 token、不发任何请求。
 
+### 打开 DeepSeek（agent 指令，不是脚本命令）
+
+`status` / `list` / `pull` / `push` 之外还有一个高频动作：**让 agent 打开 DeepSeek 面板**。
+
+- 触发：对 agent 说「打开 DeepSeek」「我要和 DeepSeek 聊」。
+- 实现：agent 调 `present_files` 传 `https://chat.deepseek.com/`，页面即在 WorkBuddy 内置浏览器面板打开。
+- 场景：首次扫码登录；或 `push` 前发现面板没开着。
+
+这个动作不需要跑 `ds-sync.mjs`——内置浏览器没有自动化接口，但 `present_files` 的 URL 预览通道恰好落在它身上。
+
 ## 风险边界
 
 这是本项目的核心设计约束，请务必理解：
@@ -120,7 +130,7 @@ $ node ds-sync.mjs list --count 3
 
 | 现象 | 原因 / 处理 |
 |---|---|
-| 找不到已登录会话 | 没在内置浏览器面板登录 DeepSeek。在面板打开 `https://chat.deepseek.com/` 扫码登录即可 |
+| 找不到已登录会话 | 没在内置浏览器面板登录 DeepSeek。让 agent「打开 DeepSeek」（present_files 开 URL），扫码登录即可 |
 | `status` 显示接口验证失败 | token 过期。面板刷新 / 重登一次；脚本每次都重新读磁盘，无需手动同步 |
 | `partitions` 某分区显示「未登录 (value=null)」 | 该分区是空壳，正常。挑显示「已登录」的那个 |
 | 会话列表为空 | 账号确实没有历史会话，或接口变更。用 `--raw` 看原始返回 |
