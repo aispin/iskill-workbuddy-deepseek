@@ -98,13 +98,13 @@ $ node ds-sync.mjs list --count 3
 
 `push` **不需要登录态** —— 它不读 token、不发任何请求。
 
-### 打开 DeepSeek（agent 指令，不是脚本命令）
+### 打开 DeepSeek（agent 指令，且是默认动作）
 
 `status` / `list` / `pull` / `push` 之外还有一个高频动作：**让 agent 打开 DeepSeek 面板**。
 
-- 触发：对 agent 说「打开 DeepSeek」「我要和 DeepSeek 聊」。
+- 触发：对 agent 说「打开 DeepSeek」「我要和 DeepSeek 聊」；**或只笼统说「同步一下」没给具体要求时，agent 也会默认先开面板**。
 - 实现：agent 调 `present_files` 传 `https://chat.deepseek.com/`，页面即在 WorkBuddy 内置浏览器面板打开。
-- 场景：首次扫码登录；或 `push` 前发现面板没开着。
+- 场景：首次扫码登录；拉取时边看原文边等结果；或 `push` 前发现面板没开着。
 
 这个动作不需要跑 `ds-sync.mjs`——内置浏览器没有自动化接口，但 `present_files` 的 URL 预览通道恰好落在它身上。
 

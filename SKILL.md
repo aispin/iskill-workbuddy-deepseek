@@ -84,13 +84,14 @@ $NODE $S push --file draft.md --no-copy    # 只统计，不碰剪贴板
 
 > `push` **不需要登录态** —— 它不读 token、不发任何请求，所以未登录也能用。
 
-## 打开 DeepSeek（无需脚本）
+## 打开 DeepSeek（无需脚本，默认动作）
 
-用户说「打开 DeepSeek」/「我要和 DeepSeek 聊」时，**不需要跑脚本**：直接调用 `present_files` 传
-`https://chat.deepseek.com/`，页面会在 **WorkBuddy 内置浏览器面板**中打开（实测有效，见
-`docs/DeepSeek网页版桥接-方案.md` 2.3 节）。
+用户说「打开 DeepSeek」/「我要和 DeepSeek 聊」，**或者只笼统说了「同步一下 DeepSeek」而没给任何具体要求**（没指定会话、没说只导出、没说反向推送）时，**第一步都先用 `present_files` 打开 `https://chat.deepseek.com/`**——页面会在 **WorkBuddy 内置浏览器面板**中显示（实测有效，见 `docs/DeepSeek网页版桥接-方案.md` 2.3 节）。面板打开后再继续后续步骤（status / pull 等），用户能同时看到对话原文，方便核对。
+
+不需要跑脚本——`present_files` 的 URL 预览通道恰好落在内置浏览器面板上。
 
 典型场景：
+- **无具体指令的默认动作**：「同步一下」「拉一下 DeepSeek」这类笼统触发，先开面板再干活。
 - **首次登录**：面板打开后扫码登录，登录态落盘，之后 `status`/`pull` 即可用。
 - **反向流程前**：`push` 只到剪贴板，用户需要一个已经开着 DeepSeek 的面板来粘贴。
 
@@ -108,7 +109,7 @@ $NODE $S push --file draft.md --no-copy    # 只统计，不碰剪贴板
 
 ## 标准执行流程
 
-1. 用户说「同步一下 DeepSeek」/「把网页版的结论拿过来」。
+1. 用户说「同步一下 DeepSeek」/「把网页版的结论拿过来」。**若没给任何具体要求，先按「打开 DeepSeek」节用 `present_files` 开面板**（用户能边看原文边等结果）。
 2. 跑 `ds-sync.mjs status` 确认登录态。失败 → 见下方排查。
 3. 跑 `ds-sync.mjs pull --latest`（或按用户指定的标题/序号）。
 4. 把内容当作**用户提供的上下文**继续干活；不要复述整篇，直接接着做。
