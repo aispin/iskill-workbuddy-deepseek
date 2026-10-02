@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 238" width="680" height="238" role="img" aria-labelledby="dsTitle dsDesc">
+  <title id="dsTitle">DeepSeek 桥接：从外部 Chrome 改为只读登录态</title>
+  <desc id="dsDesc">新方案四步：内置浏览器面板聊天、token 落盘 leveldb、只读 GET 拉取对话、进入 agent 上下文。全程在 WorkBuddy 内完成，不需要外部 Chrome。旧方案（外部 Chrome + CDP）已废弃。</desc>
+
+  <rect x="0" y="0" width="680" height="238" fill="#FFFFFF"/>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+    <text x="40" y="46" font-size="14" font-weight="500" fill="#2C2C2A">新方案：只读登录态，全程不出 WorkBuddy</text>
+
+    <rect x="40" y="66" width="129" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+    <text x="104.5" y="84" font-size="14" font-weight="500" fill="#0C447C" text-anchor="middle" dominant-baseline="central">内置浏览器面板</text>
+    <text x="104.5" y="102" font-size="12" font-weight="400" fill="#185FA5" text-anchor="middle" dominant-baseline="central">你和 DeepSeek 聊</text>
+
+    <rect x="197" y="66" width="129" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+    <text x="261.5" y="84" font-size="14" font-weight="500" fill="#444441" text-anchor="middle" dominant-baseline="central">token 落盘</text>
+    <text x="261.5" y="102" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="middle" dominant-baseline="central">leveldb 分区</text>
+
+    <rect x="354" y="66" width="129" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+    <text x="418.5" y="84" font-size="14" font-weight="500" fill="#085041" text-anchor="middle" dominant-baseline="central">只读 GET</text>
+    <text x="418.5" y="102" font-size="12" font-weight="400" fill="#0F6E56" text-anchor="middle" dominant-baseline="central">拉取对话全文</text>
+
+    <rect x="511" y="66" width="129" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+    <text x="575.5" y="84" font-size="14" font-weight="500" fill="#085041" text-anchor="middle" dominant-baseline="central">Agent 上下文</text>
+    <text x="575.5" y="102" font-size="12" font-weight="400" fill="#0F6E56" text-anchor="middle" dominant-baseline="central">接着执行</text>
+
+    <line x1="171" y1="94" x2="195" y2="94" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <line x1="328" y1="94" x2="352" y2="94" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <line x1="485" y1="94" x2="509" y2="94" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+    <path d="M40 134 L40 142 L640 142 L640 134" fill="none" stroke="#B4B2A9" stroke-width="0.5"/>
+    <text x="340" y="162" font-size="12" font-weight="400" fill="#5F5E5A" text-anchor="middle" dominant-baseline="central">全流程在 WorkBuddy 内 · 无需外部 Chrome · 不切换应用</text>
+
+    <rect x="150" y="182" width="380" height="34" rx="8" fill="#FCEBEB" stroke="#A32D2D" stroke-width="0.5"/>
+    <text x="340" y="199" font-size="12" font-weight="400" fill="#791F1F" text-anchor="middle" dominant-baseline="central">旧方案：外部 Chrome + CDP —— 已废弃（要开两个应用）</text>
+  </g>
+</svg>

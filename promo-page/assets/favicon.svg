@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="promo page">
+  <!-- 模板自带的中性图标：品牌渐变圆角方 + 命令行提示符。
+       逐技能请用 iskill-app-icon 生成自己的图标覆盖本文件（favicon.svg）。 -->
+  <defs>
+    <linearGradient id="gr" x1="64" y1="24" x2="448" y2="488" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7c5cff" />
+      <stop offset="1" stop-color="#22d3ee" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#gr)" />
+  <path d="M178 178 L258 258 L178 338" fill="none" stroke="#ffffff" stroke-width="42"
+        stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M288 338 H354" fill="none" stroke="#ffffff" stroke-width="42" stroke-linecap="round" opacity=".92" />
+</svg>
