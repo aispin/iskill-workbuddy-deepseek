@@ -48,6 +48,12 @@ agent 跑 ds-sync.mjs（只读 GET）→ 对话内容进入 agent 上下文
 
 > 这与「把网页版封装成 OpenAI API」**不是一个量级**：那个方案要高频调用 completion 并做 prompt 注入，已被大量封号案例证伪。本方案不碰生成链路。
 
+**反向（`push`）的风险更低 —— 它是零。** `push` 只把文本放进系统剪贴板，**完全不碰网络**，
+由用户自己粘贴到面板里。这是刻意的：程序化「发送消息」才是封号风险的来源，所以这条路不自动化。
+
+> ⚠️ **不要给本技能加「自动发消息到 DeepSeek」。** 那需要 `POST /chat/completion` + PoW，
+> 等于把已经排除掉的高风险方案重新引进来（论证见 `docs/DeepSeek网页版转API-可行性评估.md`）。
+
 ## 用法
 
 脚本：`scripts/ds-sync.mjs`（Node，无第三方依赖）
@@ -66,7 +72,17 @@ $NODE $S pull --latest --think   # 连思考过程一起导出
 $NODE $S pull --latest --tail 6  # 只要最后 6 条
 $NODE $S pull --latest --out x.md
 $NODE $S partitions              # 排查用：列出所有分区及 token 情况
+
+# 反向：把内容放进剪贴板，由你粘到面板里（WorkBuddy → DeepSeek）
+$NODE $S push --file draft.md              # 从文件读
+$NODE $S push --text "结论是……"             # 直接给
+cat draft.md | $NODE $S push               # 从 stdin 读
+$NODE $S push --file draft.md --out x.md   # 不碰剪贴板，写文件
+$NODE $S push --file draft.md --no-header  # 不加「来自 WorkBuddy」抬头
+$NODE $S push --file draft.md --no-copy    # 只统计，不碰剪贴板
 ```
+
+> `push` **不需要登录态** —— 它不读 token、不发任何请求，所以未登录也能用。
 
 ## 消息结构（渲染依据）
 
@@ -85,6 +101,15 @@ $NODE $S partitions              # 排查用：列出所有分区及 token 情�
 3. 跑 `ds-sync.mjs pull --latest`（或按用户指定的标题/序号）。
 4. 把内容当作**用户提供的上下文**继续干活；不要复述整篇，直接接着做。
 
+## 反向流程：把 WorkBuddy 的产出送回 DeepSeek
+
+1. 用户说「把结论发回 DeepSeek」/「同步到网页版」。
+2. 把要送过去的内容整理好，写进一个临时文件（或直接用 `--text`）。
+3. 跑 `ds-sync.mjs push --file <路径>`。
+4. 告诉用户：**内容已在剪贴板，去面板的输入框按 ⌘V 粘贴**。
+
+**到剪贴板就结束。** 发送动作必须由人完成 —— 不要写脚本去模拟粘贴或调用接口。
+
 ## 排查
 
 | 现象 | 原因 / 处理 |
@@ -94,6 +119,8 @@ $NODE $S partitions              # 排查用：列出所有分区及 token 情�
 | `partitions` 里某个分区显示「未登录 (value=null)」 | 该分区是空壳，正常。挑显示「已登录」的那个。 |
 | 会话列表为空 | 账号确实没有历史会话，或接口变更。用 `--raw` 看原始返回。 |
 | 找不到标题匹配 | 用 `list` 看准确标题，注意是全角/半角与空格。 |
+| `push` 报「没找到可用的剪贴板命令」 | 系统缺 `pbcopy`/`clip`/`wl-copy`/`xclip`。改用 `--out <路径>` 写文件后手动复制。 |
+| `push` 之后剪贴板没变 | 检查是不是误加了 `--no-copy`；空内容会以退出码 8 拒绝。 |
 
 ## 已知限制
 

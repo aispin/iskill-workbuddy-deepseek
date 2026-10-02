@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ds-sync.mjs — 把 WorkBuddy 内置浏览器里的 DeepSeek 对话读出来，交给 agent。
+ * ds-sync.mjs — 在 WorkBuddy 内置浏览器的 DeepSeek 对话 ⇄ agent 之间搬运内容。
  *
  * 为什么需要它：
  *   WorkBuddy 的内置浏览器面板是 Electron webview，**没有暴露 CDP 调试端口**，
@@ -15,6 +15,9 @@
  *   真正的「生成」始终发生在真实浏览器里，因此与「把网页版封装成 API」的封号风险
  *   不是一个量级。但仍属非浏览器 HTTP 客户端，请保持低频、按需调用。
  *
+ *   push 子命令**完全不碰网络** —— 它只把文本放进系统剪贴板，由你自己粘贴到面板里。
+ *   这是刻意的：程序化「发送消息」正是封号风险的来源，所以这条路不自动化。
+ *
  * 用法：
  *   node ds-sync.mjs status                     查看登录状态 / 定位分区
  *   node ds-sync.mjs list [--count 20]          列出最近会话
@@ -23,6 +26,7 @@
  *   node ds-sync.mjs pull --id <session_id>
  *   node ds-sync.mjs pull --index 2             list 里的序号（1 起）
  *   node ds-sync.mjs partitions                 列出所有分区及其 token 情况
+ *   node ds-sync.mjs push --file <路径>         把内容放进剪贴板（反向：WorkBuddy → DeepSeek）
  *
  * 选项：
  *   --think          包含模型思考过程（THINK，可能很长）
@@ -30,11 +34,16 @@
  *   --out <path>     写入文件（默认打印到 stdout）
  *   --raw            输出原始 JSON（调试用）
  *   --json           机器可读输出
+ *   --file <path>    push：从文件读内容
+ *   --text "..."     push：直接给内容
+ *   --no-header      push：不加「来自 WorkBuddy」抬头
+ *   --no-copy        push：只统计，不碰剪贴板
  */
 
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 
 const HOME = os.homedir();
 const PARTITIONS_ROOT = path.join(HOME, ".workbuddy-ai", "app", "session", "Partitions");
@@ -63,7 +72,7 @@ function parseArgs(argv) {
     else if (a === "--raw") out.raw = true;
     else if (a === "--json") out.json = true;
     else if (a === "--help" || a === "-h") out.help = true;
-    else if (a === "--count" || a === "--tail" || a === "--out" || a === "--id" || a === "--title" || a === "--index") {
+    else if (a === "--count" || a === "--tail" || a === "--out" || a === "--id" || a === "--title" || a === "--index" || a === "--text" || a === "--file") {
       out[a.slice(2)] = argv[++i];
     } else if (a.startsWith("--")) {
       out[a.slice(2)] = true;
@@ -254,6 +263,39 @@ function renderSession(session, messages, opts = {}) {
   return lines.join("\n");
 }
 
+// ------------------------------------------------------------ push (clipboard)
+
+function readStdin() {
+  try {
+    return fs.readFileSync(0, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+/** 把文本放进系统剪贴板；返回用到的命令名，都不可用则返回 null。 */
+function copyToClipboard(text) {
+  const candidates =
+    process.platform === "darwin"
+      ? [["pbcopy", []]]
+      : process.platform === "win32"
+        ? [["clip", []]]
+        : [
+            ["wl-copy", []],
+            ["xclip", ["-selection", "clipboard"]],
+            ["xsel", ["--clipboard", "--input"]],
+          ];
+  for (const [cmd, argv] of candidates) {
+    try {
+      const r = spawnSync(cmd, argv, { input: text });
+      if (r && r.status === 0) return cmd;
+    } catch {
+      /* 试下一个 */
+    }
+  }
+  return null;
+}
+
 // --------------------------------------------------------------------- main
 
 async function main() {
@@ -272,10 +314,72 @@ async function main() {
         "  pull --title <关键字>    按标题模糊匹配",
         "  pull --id <session_id>  按 ID",
         "  pull --index <n>        按 list 序号（1 起）",
+        "  push --file <path>      把内容放进剪贴板（WorkBuddy → DeepSeek）",
         "",
         "选项：--think  --tail N  --out <path>  --raw  --json",
+        "      push 专用：--file <path>  --text \"...\"  --no-header  --no-copy",
       ].join("\n")
     );
+    return;
+  }
+
+  /* push 完全不碰 DeepSeek —— 只是把文本放进剪贴板，让你粘到面板里。
+     所以它不需要登录态，也不该排在 resolveSession 后面。 */
+  if (cmd === "push") {
+    let content = "";
+    if (args.file) {
+      try {
+        content = fs.readFileSync(path.resolve(args.file), "utf8");
+      } catch {
+        console.error("× 读不到文件：" + args.file);
+        process.exitCode = 8;
+        return;
+      }
+    } else if (typeof args.text === "string") {
+      content = args.text;
+    } else {
+      content = readStdin();
+    }
+
+    content = content.trim();
+    if (!content) {
+      console.error("× 没有内容可推送。三种用法：");
+      console.error("    node ds-sync.mjs push --file <路径>");
+      console.error('    node ds-sync.mjs push --text "内容"');
+      console.error('    echo "内容" | node ds-sync.mjs push');
+      process.exitCode = 8;
+      return;
+    }
+
+    const now = new Date();
+    const p2 = (n) => String(n).padStart(2, "0");
+    const stamp = `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())} ${p2(now.getHours())}:${p2(now.getMinutes())}`;
+    const payload = args["no-header"] ? content : `【来自 WorkBuddy · ${stamp}】\n\n${content}\n`;
+
+    if (args.out) {
+      const outPath = path.resolve(args.out);
+      fs.mkdirSync(path.dirname(outPath), { recursive: true });
+      fs.writeFileSync(outPath, payload, "utf8");
+      console.log("已写入 " + outPath + "（" + payload.length + " 字符）");
+      return;
+    }
+
+    console.log("内容长度：" + payload.length + " 字符");
+    if (args["no-copy"]) {
+      console.log("（--no-copy：未写入剪贴板）");
+      return;
+    }
+
+    const used = copyToClipboard(payload);
+    if (used) {
+      console.log("已复制到剪贴板（" + used + "）");
+      console.log("");
+      console.log("下一步：切到 WorkBuddy 内置浏览器面板的 DeepSeek 输入框，按 Cmd+V 粘贴。");
+      console.log("（这一步刻意留给你手动做 —— 程序化发送消息正是封号风险的来源。）");
+    } else {
+      console.error("× 没找到可用的剪贴板命令。改用 --out <路径> 写到文件后手动复制。");
+      process.exitCode = 9;
+    }
     return;
   }
 

@@ -7,6 +7,8 @@
 在 **WorkBuddy 内置浏览器**里用免费的 DeepSeek 网页版做讨论，再把对话内容一句话交给付费 agent 执行 ——
 **不用外部 Chrome，不用在两个应用之间切换。**
 
+反向也通：把 agent 的产出放到剪贴板，粘回 DeepSeek 继续聊（`push`，零网络请求）。
+
 ![方案架构：只读登录态](assets/architecture.svg)
 
 ## 它解决什么问题
@@ -88,8 +90,13 @@ $ node ds-sync.mjs list --count 3
 | `pull --title <关键字>` | 按标题模糊匹配 |
 | `pull --id <session_id>` | 按 ID |
 | `pull --index <n>` | 按 `list` 序号（1 起） |
+| `push --file <路径>` | **反向**：把内容放进剪贴板，由你粘到面板（WorkBuddy → DeepSeek） |
 
 选项：`--think`（含思考过程）· `--tail N`（只取最后 N 条）· `--out <path>`（写入文件）· `--raw`（原始 JSON）· `--json`
+
+`push` 专用：`--file <路径>` · `--text "..."` · `--no-header`（不加抬头）· `--no-copy`（只统计，不碰剪贴板）
+
+`push` **不需要登录态** —— 它不读 token、不发任何请求。
 
 ## 风险边界
 
@@ -104,6 +111,11 @@ $ node ds-sync.mjs list --count 3
 > 这与「把网页版封装成 OpenAI API」**不是一个量级**：那个方案要高频调用 completion 并做 prompt 注入，
 > 已被大量封号案例证伪（详见 `docs/DeepSeek网页版转API-可行性评估.md`）。本方案**不碰生成链路**。
 
+**反向（`push`）的风险是零。** 它只把文本放进系统剪贴板，**完全不碰网络**，由你自己粘贴到面板里。
+
+> ⚠️ **本项目刻意不做「自动发消息到 DeepSeek」。** 那需要 `POST /chat/completion` + PoW，
+> 等于把已经排除掉的高风险方案重新引进来。发送这一步永远留给人。
+
 ## 排查
 
 | 现象 | 原因 / 处理 |
@@ -113,12 +125,14 @@ $ node ds-sync.mjs list --count 3
 | `partitions` 某分区显示「未登录 (value=null)」 | 该分区是空壳，正常。挑显示「已登录」的那个 |
 | 会话列表为空 | 账号确实没有历史会话，或接口变更。用 `--raw` 看原始返回 |
 | 找不到标题匹配 | 用 `list` 看准确标题，注意全角 / 半角与空格 |
+| `push` 报「没找到可用的剪贴板命令」 | 系统缺 `pbcopy`/`clip`/`wl-copy`/`xclip`。改用 `--out <路径>` 写文件后手动复制 |
+| `push` 之后剪贴板没变 | 检查是否误加了 `--no-copy`；空内容会以退出码 8 拒绝 |
 
 ## 已知限制
 
 - 依赖 DeepSeek 网页版的**私有接口**，官方改版即失效；`--raw` 是第一排查手段。
 - token 是**账号级凭证**，脚本会直接从磁盘读。**不要把导出物或 token 提交到仓库。**
-- 只能**读**。要「写」（让 DeepSeek 继续生成）必须用户回到面板里手动发消息 —— 这是刻意的风险边界，不要绕过。
+- **对 DeepSeek 只能读。** `push` 只把内容送到剪贴板，**发送动作必须由人完成** —— 这是刻意的风险边界，不要绕过。
 
 ## 目录结构
 
@@ -126,13 +140,15 @@ $ node ds-sync.mjs list --count 3
 iskill-workbuddy-deepseek/
 ├── SKILL.md                    # 技能清单（agent 读取）
 ├── README.md                   # 本文件（人读）
+├── LICENSE                     # MIT
 ├── assets/
 │   └── architecture.svg        # 方案架构图
 ├── docs/
 │   ├── DeepSeek网页版桥接-方案.md          # 方案演进 + 踩坑存档
 │   └── DeepSeek网页版转API-可行性评估.md    # 封号风险论证
+├── promo-page/                 # 中英双语落地页（发布到 gh-pages）
 └── scripts/
-    └── ds-sync.mjs             # 零依赖 CLI
+    └── ds-sync.mjs             # 零依赖 CLI（status / list / pull / push）
 ```
 
 ## 历史背景

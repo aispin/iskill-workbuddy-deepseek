@@ -118,7 +118,7 @@ window.PROMO = {
         items: [
           { q: "会有封号风险吗？", a: "只调三个 <b>只读 GET</b> 接口，不碰 <code>/chat/completion</code>、不做 PoW、不做 prompt 注入；真正的生成始终发生在真实浏览器里。属<b>低但非零</b>风险 —— 按需调用，别轮询。" },
           { q: "为什么不用「外部 Chrome + CDP」那套？", a: "试过，能跑通，但必须同时开两个应用。WorkBuddy 内置浏览器没有暴露 CDP 端口，于是改成读它的登录态 —— 反而更简单，且不用起任何额外浏览器进程。" },
-          { q: "能自动发消息给 DeepSeek 吗？", a: "不能，这是刻意的。技能<b>只读</b>。要让 DeepSeek 继续生成，你自己回面板里发 —— 这也是风险边界所在。" },
+          { q: "能自动发消息给 DeepSeek 吗？", a: "不能，这是刻意的 —— 程序化发送正是封号风险的来源。反向搬运用 <code>push</code>：它只把内容放进剪贴板，你粘过去、自己按发送，全程零网络请求。" },
           { q: "Windows 能用吗？", a: "脚本用 <code>os.homedir()</code> 拼路径，理论上跨平台，但目前只在 macOS 实测过。Windows 上请自行验证分区路径。" },
           { q: "能不能不用 AI，手动装？", a: "可以。把仓库 clone 进你的 agent 技能目录就行 —— 纯文本加脚本，没有构建步骤。" }
         ]
@@ -229,7 +229,7 @@ window.PROMO = {
         items: [
           { q: "Is there a ban risk?", a: "It calls three <b>read-only GET</b> endpoints. It never touches <code>/chat/completion</code>, never solves a PoW, never injects prompts. All actual generation happens in the real browser. Risk is <b>low but not zero</b> — call on demand, never poll." },
           { q: "Why not the external Chrome + CDP approach?", a: "Tried it; it works, but it forces two apps open at once. WorkBuddy's built-in browser exposes no CDP port, so this reads its session state instead — simpler, and no extra browser process." },
-          { q: "Can it send messages to DeepSeek automatically?", a: "No, deliberately. The skill is <b>read-only</b>. To make DeepSeek generate more, you go back to the panel and send it yourself — that is exactly where the risk boundary sits." },
+          { q: "Can it send messages to DeepSeek automatically?", a: "No, deliberately — programmatic sending is exactly where the ban risk comes from. For the reverse direction use <code>push</code>: it only puts the text on your clipboard; you paste and hit send yourself. Zero network requests." },
           { q: "Does it work on Windows?", a: "The script builds paths with <code>os.homedir()</code>, so it should be portable — but it has only been verified on macOS. Please validate the partition path yourself on Windows." },
           { q: "Can I install it without an agent?", a: "Sure. Clone the repo into your agent's skills directory — it's plain text plus scripts, with no build step." }
         ]
