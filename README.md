@@ -132,6 +132,7 @@ $ node ds-sync.mjs list --count 3
 |---|---|
 | 找不到已登录会话 | 没在内置浏览器面板登录 DeepSeek。让 agent「打开 DeepSeek」（present_files 开 URL），扫码登录即可 |
 | `status` 显示接口验证失败 | token 过期。面板刷新 / 重登一次；脚本每次都重新读磁盘，无需手动同步 |
+| **账号和刚登录的对不上**（读出旧账号） | webview 的 localStorage 未 flush 到磁盘，脚本读的是落盘态（看 `token 落盘` 时间）。关闭面板重开、等 2 秒重跑即可 |
 | `partitions` 某分区显示「未登录 (value=null)」 | 该分区是空壳，正常。挑显示「已登录」的那个 |
 | 会话列表为空 | 账号确实没有历史会话，或接口变更。用 `--raw` 看原始返回 |
 | 找不到标题匹配 | 用 `list` 看准确标题，注意全角 / 半角与空格 |

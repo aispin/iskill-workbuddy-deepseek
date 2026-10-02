@@ -101,24 +101,43 @@ function leveldbOf(partDir) {
   return path.join(partDir, "Local Storage", "leveldb");
 }
 
-/** 从 leveldb 里抠出 userToken 的 JSON，返回 {raw, value} 或 null */
+/**
+ * 从 leveldb 里抠出 userToken 的 JSON。
+ * 语义：**最新一条记录说了算** —— 找不到（无 userToken 键）返回 null（未登录过）；
+ * 最新记录 value=null（登出）就返回 {value:null}，**绝不回退到旧 token**
+ * （否则登出后会谎报仍登录着旧账号）。
+ * 返回 {raw, value, dir, file, fileMtime} 或 null。
+ */
 function extractTokenFromLeveldb(dir) {
   let files;
   try {
     files = fs
       .readdirSync(dir)
       .filter((f) => /\.(ldb|log)$/i.test(f))
-      .map((f) => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))
-      .sort((a, b) => a.t - b.t) // 旧 -> 新，最后一次写入在最后
-      .map((x) => x.f);
+      .map((f) => {
+        // leveldb 文件号单调递增，比 mtime 更能代表写入顺序
+        const num = parseInt(f, 10);
+        let mtimeMs = 0;
+        try {
+          mtimeMs = fs.statSync(path.join(dir, f)).mtimeMs;
+        } catch {
+          /* ignore */
+        }
+        return { f, num: Number.isNaN(num) ? 0 : num, mtimeMs };
+      })
+      .sort((a, b) => a.num - b.num) // 旧 -> 新
+      .map((x) => x);
   } catch {
     return null;
   }
 
   let buf = Buffer.alloc(0);
-  for (const f of files) {
+  const fileSpans = []; // 记录每个文件在拼接缓冲里的区间，用于定位 token 所在文件
+  for (const x of files) {
     try {
-      buf = Buffer.concat([buf, fs.readFileSync(path.join(dir, f))]);
+      const b = fs.readFileSync(path.join(dir, x.f));
+      fileSpans.push({ ...x, start: buf.length, end: buf.length + b.length });
+      buf = Buffer.concat([buf, b]);
     } catch {
       /* ignore */
     }
@@ -133,9 +152,14 @@ function extractTokenFromLeveldb(dir) {
     positions.push(i);
     from = i + 1;
   }
+  if (!positions.length) return null;
 
-  // 从后往前找第一个可解析且 value 非空的
-  let fallback = null;
+  function spanOf(pos) {
+    for (const sp of fileSpans) if (pos >= sp.start && pos < sp.end) return sp;
+    return null;
+  }
+
+  // 从后往前：第一条可解析的记录就是最新状态（无论 value 是否为空）
   for (let k = positions.length - 1; k >= 0; k--) {
     const start = s.indexOf("{", positions[k]);
     if (start < 0) continue;
@@ -161,11 +185,16 @@ function extractTokenFromLeveldb(dir) {
       continue;
     }
     if (!("value" in obj)) continue;
-    const value = typeof obj.value === "string" ? obj.value : null;
-    if (value) return { raw, value, dir };
-    if (!fallback) fallback = { raw, value: null, dir };
+    const sp = spanOf(positions[k]);
+    return {
+      raw,
+      value: typeof obj.value === "string" ? obj.value : null,
+      dir,
+      file: sp ? sp.f : "?",
+      fileMtime: sp ? sp.mtimeMs : 0,
+    };
   }
-  return fallback;
+  return null;
 }
 
 /** 扫描所有分区，挑出「有有效 token 且 leveldb 最新」的那个 */
@@ -395,8 +424,13 @@ async function main() {
   }
 
   if (!chosen) {
+    const anySeen = all.some((x) => x.token && x.token.value === null);
     console.error("× 没找到任何已登录的 DeepSeek 会话。");
+    if (anySeen) {
+      console.error("  （磁盘上有 userToken 记录，但最新一条是登出状态 —— 不回退旧 token。）");
+    }
     console.error("  请先在 WorkBuddy 内置浏览器面板打开 https://chat.deepseek.com/ 并登录。");
+    console.error("  若刚登录过仍提示此条：webview 未落盘，关闭面板重开、等 2 秒再试。");
     process.exitCode = 3;
     return;
   }
@@ -404,11 +438,15 @@ async function main() {
   const token = chosen.token.value;
 
   if (cmd === "status") {
+    const persistedAt = chosen.token.fileMtime
+      ? new Date(chosen.token.fileMtime).toLocaleString("zh-CN", { hour12: false })
+      : "-";
     const r = await apiGet("/api/v0/users/current", token);
     if (r.status !== 200 || !r.json || r.json.code !== 0) {
-      console.log("分区    : " + chosen.partition);
-      console.log("token   : " + token.slice(0, 8) + "..." + token.slice(-6) + " (" + token.length + " 字符)");
-      console.log("接口验证: 失败 (HTTP " + r.status + ") — token 可能已失效，请在面板重新登录");
+      console.log("分区      : " + chosen.partition);
+      console.log("token     : " + token.slice(0, 8) + "..." + token.slice(-6) + " (" + token.length + " 字符)");
+      console.log("token 落盘: " + persistedAt + "（" + chosen.token.file + "）");
+      console.log("接口验证  : 失败 (HTTP " + r.status + ") — token 可能已失效，请在面板重新登录");
       process.exitCode = 4;
       return;
     }
@@ -421,6 +459,11 @@ async function main() {
     console.log("手机号    : " + (u.mobile_number || "-"));
     console.log("用户 ID   : " + (u.id || "-"));
     console.log("token     : " + token.slice(0, 8) + "..." + token.slice(-6) + " (" + token.length + " 字符)");
+    console.log("token 落盘: " + persistedAt + "（" + chosen.token.file + "）");
+    console.log("");
+    console.log("提示：账号来自磁盘上最后一次落盘的登录态。");
+    console.log("如果你刚在面板里登录了另一个账号但这里还是旧的 —— webview 的 localStorage 尚未 flush 到磁盘。");
+    console.log("处理：关闭内置浏览器面板（或切走再切回让它重载），等 2 秒后重跑本命令。");
     return;
   }
 
