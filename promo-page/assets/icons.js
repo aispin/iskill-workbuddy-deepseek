@@ -1,4 +1,7 @@
 /* ============================================================================
+ * @iskill-source iskill-promo-page/templates/promo-page/assets/icons.js
+ * @iskill-version 1.0.0
+ *
  * iskill-promo-page · 内联图标集
  *
  * 只画几何图形（stroke-based），**不用 emoji**——emoji 跨平台渲染不一致、

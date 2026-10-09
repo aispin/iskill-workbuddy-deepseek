@@ -1,0 +1,29 @@
+{
+  "name": "iskill-workbuddy-deepseek",
+  "private": true,
+  "type": "module",
+  "description": "iskill-workbuddy-deepseek 落地页实例；promo-page/assets 引擎三件套为 vendored 副本（真源 iskill-promo-page）",
+  "iskillDeps": [
+    {
+      "skill": "iskill-promo-page",
+      "repo": "aispin/iskill-promo-page",
+      "path": "templates/promo-page/assets/app.js",
+      "version": "1.0.0",
+      "local": "promo-page/assets/app.js"
+    },
+    {
+      "skill": "iskill-promo-page",
+      "repo": "aispin/iskill-promo-page",
+      "path": "templates/promo-page/assets/style.css",
+      "version": "1.0.0",
+      "local": "promo-page/assets/style.css"
+    },
+    {
+      "skill": "iskill-promo-page",
+      "repo": "aispin/iskill-promo-page",
+      "path": "templates/promo-page/assets/icons.js",
+      "version": "1.0.0",
+      "local": "promo-page/assets/icons.js"
+    }
+  ]
+}

@@ -148,3 +148,15 @@ $NODE $S push --file draft.md --no-copy    # 只统计，不碰剪贴板
 早期尝试过「外部 Chrome + CDP + agent-browser」的搬运方案（见 `docs/DeepSeek网页版桥接-方案.md`），能跑通但**要开两个应用**，被用户否决。本 skill 是替代方案：**只读登录态**，因此不需要任何额外浏览器进程。
 
 相关文档（本技能 `docs/` 下）：`docs/DeepSeek网页版转API-可行性评估.md`（封号风险论证）、`docs/DeepSeek网页版桥接-方案.md`（方案演进）。
+
+## 依赖同步
+
+本仓库 `promo-page/assets/{app.js,style.css,icons.js}` 是 [iskill-promo-page](https://github.com/aispin/iskill-promo-page)
+模板引擎的 vendored 副本（锁定版本见 `package.json` 的 `iskillDeps`），**不要手改**——
+去真源仓库改并升 `@iskill-version`，再用 iskill-dep-sync 同步回来（本机无该工具时按下面自举）：
+
+```bash
+T="$HOME/.workbuddy/skills/iskill-dep-sync/scripts/skill-deps.mjs"
+[ -f "$T" ] || { TMP="$(mktemp -d)"; curl -fsSL "https://raw.githubusercontent.com/aispin/iskill-dep-sync/HEAD/scripts/skill-deps.mjs" -o "$TMP/skill-deps.mjs"; T="$TMP/skill-deps.mjs"; }
+node "$T" check "$(pwd)"     # 漂移检测；node "$T" sync "$(pwd)" 恢复/升级；node "$T" env "$(pwd)" 冷启动自检
+```

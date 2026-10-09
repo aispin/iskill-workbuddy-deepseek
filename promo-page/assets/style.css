@@ -1,4 +1,7 @@
 /* ============================================================================
+ * @iskill-source iskill-promo-page/templates/promo-page/assets/style.css
+ * @iskill-version 1.0.0
+ *
  * iskill-promo-page · 落地页样式（零依赖，纯静态）
  *
  * 主题：默认跟随系统（JS 在首帧前打 .dark / .light）；JS 关闭时由媒体查询兜底。

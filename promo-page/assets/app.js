@@ -1,4 +1,7 @@
 /* ============================================================================
+ * @iskill-source iskill-promo-page/templates/promo-page/assets/app.js
+ * @iskill-version 1.0.0
+ *
  * iskill-promo-page · 运行时
  *
  * 四件事：① 主题（跟随系统 / 手动 / URL 参数）② 语言（中英）
