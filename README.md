@@ -170,4 +170,4 @@ iskill-workbuddy-deepseek/
 外部 Chrome 路线的完整踩坑记录（Chrome 装在外置卷导致误报未安装、`--no-sandbox`、`setsid` 回收、
 agent-browser 连上后新建自己的标签页等）保留在 `docs/DeepSeek网页版桥接-方案.md`。
 
-> 依赖同步：本仓库含 iskill 共享真源的 vendored 副本（清单见 `package.json` 的 `iskillDeps`），**不要手改**。使用前请同时安装 iskill-dep-sync：对 agent 说「请帮我安装 Skill：aispin/iskill-dep-sync」；用法见 SKILL.md「依赖同步」节。
+> 依赖同步：本仓库含 iskill 共享真源的 vendored 副本（清单见 `package.json` 的 `iskillDeps`），**不要手改**。使用前请同时安装 iskill-utils：对 agent 说「请帮我安装 Skill：aispin/iskill-utils」；用法见 SKILL.md「依赖同步」节。
