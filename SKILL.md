@@ -153,7 +153,7 @@ $NODE $S push --file draft.md --no-copy    # 只统计，不碰剪贴板
 
 本仓库 `promo-page/assets/{app.js,style.css,icons.js}` 是 [iskill-promo-page](https://github.com/aispin/iskill-promo-page)
 模板引擎的 vendored 副本（锁定版本见 `package.json` 的 `iskillDeps`），**不要手改**——
-去真源仓库改并升 `@iskill-version`，再用 iskill-dep-sync 同步回来（本机无该工具时按下面自举）：
+去真源仓库改并升 `@iskill-version`，再用 iskill-dep-sync 同步回来。本机未装该工具时，先安装：对 agent 说「请帮我安装 Skill：aispin/iskill-dep-sync」，或按下方自举命令现场拉取：
 
 ```bash
 T="$HOME/.workbuddy/skills/iskill-dep-sync/scripts/skill-deps.mjs"
